@@ -99,3 +99,12 @@ rf_rs %>%
   coord_equal()
 
 ggsave("curvas-roc-bootstraping.jpeg", height=8, width=10, units="in")
+
+rice_pivot<- recipe_training %>%
+  pivot_longer(-class, names_to = "longitudes_onda", values_to = "value")
+
+
+rice_pivot %>%
+  ggplot(aes(x=value))+
+  geom_boxplot()+
+  facet_wrap(~longitudes_onda)
