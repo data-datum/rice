@@ -141,4 +141,5 @@ final_res <- final_wf %>%
 final_res %>%
   collect_metrics()
     
-    
+collect_predictions(RF_final) %>%
+  conf_mat(class, .pred_class)

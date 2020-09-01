@@ -7,7 +7,7 @@ library(tidyverse)
 library(readxl)
 library(ranger)
 library(tune)
-rice<-read_excel("data/rice-reduced.xlsx")
+rice<-read_excel("data/rice-modified.xlsx")
 
 #la columna Class esta codificada como caracter y necesito que sea FACTOR
 class(rice$Class)
@@ -39,7 +39,7 @@ glimpse(recipe_training)
 #quedaron solo 12 variables y 119 filas
 
 set.seed(123)
-rice_bootstrap <- bootstraps(rice_train, times=5)
+rice_bootstrap <- bootstraps(rice_train, times=10)
 rice_bootstrap
 
 #vamos a hacer random forest sin tunning
@@ -100,11 +100,13 @@ rf_rs %>%
 
 ggsave("curvas-roc-bootstraping.jpeg", height=8, width=10, units="in")
 
-rice_pivot<- recipe_training %>%
-  pivot_longer(-class, names_to = "longitudes_onda", values_to = "value")
+#rice_pivot<- recipe_training %>%
+  #pivot_longer(-class, names_to = "longitudes_onda", values_to = "value")
 
 
-rice_pivot %>%
-  ggplot(aes(x=value))+
-  geom_boxplot()+
-  facet_wrap(~longitudes_onda)
+#rice_pivot %>%
+  #ggplot(aes(x=value))+
+  #geom_boxplot()+
+  #facet_wrap(~longitudes_onda)
+
+
