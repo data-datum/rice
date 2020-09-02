@@ -7,27 +7,44 @@ library(tidyverse)
 library(readxl)
 library(ranger)
 library(tune)
-rice<-read_excel("data/rice-modified.xlsx")
+rice<-read_excel("data/rice.xlsx")
 
 #la columna Class esta codificada como caracter y necesito que sea FACTOR
-class(rice$Class)
-rice$Class <-as.factor(rice$Class)
+class(rice$class)
+rice$class <-as.factor(rice$class)
 str(rice)
 
 #necesito limpiar los nombres de las columnas
 library(janitor)
-rice2<-rice%>%
+rice<-rice%>%
   clean_names()
+
+
+
+#variables de la columna class
+
+rice <- rice  %>%
+  mutate(class = str_replace(class, "10% Adulteration", "10_adulteration"))%>%
+  mutate(class = str_replace(class, "20% Adulteration", "20_adulteration"))%>%
+  mutate(class = str_replace(class, "30% Adulteration", "30_adulteration"))%>%
+  mutate(class = str_replace(class, "40% Adulteration", "40_adulteration"))%>%
+  mutate(class = str_replace(class, "Pure variety", "pure_variety"))
+
+# la variable predictora DEBE ser factor
+rice$class <-as.factor(rice$class)
+
+str(rice)
+
 
 #divido los datos
 set.seed(123)
-rice_split<-initial_split(rice2, strata=class)
+rice_split<-initial_split(rice, strata=class)
 rice_train<-training(rice_split)
 rice_test<-testing(rice_split)
 
 
 rice_recipe<-recipe(class~., data=rice_split)%>%
-  step_corr(all_predictors(), threshold=0.7) %>%
+  #step_corr(all_predictors(), threshold=0.7) %>%
   step_center(all_predictors(), -all_outcomes()) %>%
   step_scale(all_predictors(), -all_outcomes()) %>%
   prep()
@@ -36,7 +53,7 @@ rice_recipe
 
 recipe_training <- juice(rice_recipe)
 glimpse(recipe_training)
-#quedaron solo 12 variables y 119 filas
+#quedaron solo 10 variables y 114 filas
 
 set.seed(123)
 rice_bootstrap <- bootstraps(rice_train, times=10)
@@ -92,9 +109,9 @@ collect_predictions(RF_final) %>%
 rf_rs %>%
   collect_predictions() %>%
   group_by(id) %>%
-  roc_curve(class, .pred_Adulterated:.pred_Japonica) %>%
-  ggplot(aes(1 - specificity, sensitivity, color = id)) +
-  geom_abline(lty = 2, color = "gray80", size = 1.5) +
+  roc_curve(class, .pred_10_adulteration:.pred_pure_variety) %>%
+  ggplot(aes(1 - specificity, sensitivity, color=id)) +
+  geom_abline(lty = 1, color = "gray80", size = 1.5) +
   geom_path(show.legend = TRUE, alpha = 0.6, size = 1.2) +
   coord_equal()
 

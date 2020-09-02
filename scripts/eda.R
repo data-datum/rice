@@ -20,7 +20,7 @@ rice<-rice%>%
 rice %>% #datos de entrada
   ggpairs(aes(color = class))+ theme_bw() #función ggpairs
 
-
+  
 #PCA
 
 pca_rec <- recipe(~., data = rice) %>%
@@ -42,11 +42,21 @@ tidied_pca %>%
   facet_wrap(~component, nrow = 1) +
   labs(y = NULL)
 
-juice(pca_prep) %>%
-  ggplot(aes(PC1, PC2, label=class)) +
+#agrego rownames
+pca_row <- juice(pca_prep)%>%
+  mutate(name = rownames(.)) %>% 
+  select(name, everything())
+
+
+pca <- pca_row %>%
+  ggplot(aes(PC1, PC2, label=name)) +
   geom_point(aes(color = class), alpha = 0.7, size = 2) +
   #geom_text(check_overlap = TRUE, hjust = "inward", family = "IBMPlexSans") +
   labs(color = NULL)
+
+
+library(plotly)
+ggplotly(pca)
 
 
 pca_prep
@@ -55,8 +65,8 @@ ggsave("plots/pca01.jpeg",  height=8, width=10, units="in", dpi=300)
 
 #umap
 library(embed)
-umap_rec <- recipe(~., data = cocktails_df) %>%
-  update_role(name, category, new_role = "id") %>%
+umap_rec <- recipe(~., data = rice) %>%
+  update_role(class, new_role = "id") %>%
   step_normalize(all_predictors()) %>%
   step_umap(all_predictors())
 
@@ -64,6 +74,13 @@ umap_prep <- prep(umap_rec)
 
 umap_prep
 
+umap <-juice(umap_prep) %>%
+  ggplot(aes(umap_1, umap_2, label = class)) +
+  geom_point(aes(color = class), alpha = 0.7, size = 2) +
+  #geom_text(check_overlap = TRUE, hjust = "inward", family = "IBMPlexSans") +
+  labs(color = NULL)+
+  #xlab(x="UMAP 1", y="UMAP 2")
 
-#corrplot 
+ggplotly(umap)
+
 

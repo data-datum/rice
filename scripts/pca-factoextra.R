@@ -1,7 +1,7 @@
 #pca para detectar outliers
 library("FactoMineR")
 library("factoextra")
-rice2solo_num<- rice2 %>%
+rice2solo_num<- rice %>%
   select(-class)
 res.pca <- PCA(rice2solo_num, graph = TRUE)
 
@@ -17,3 +17,4 @@ fviz_pca_ind(res.pca,
 )
 
 dev.off()
+
