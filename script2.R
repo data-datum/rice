@@ -5,23 +5,36 @@ library(tidyverse)
 library(readxl)
 library(ranger)
 library(tune)
-rice<-read_excel("data/rice-reduced.xlsx")
+rice<-read_excel("data/rice.xlsx")
     
+
+    
+#necesito limpiar los nombres de las columnas
+library(janitor)
+rice<-rice%>%
+  clean_names()
+
+rice <- rice  %>%
+  mutate(class = str_replace(class, "10% Adulteration", "10_adulteration"))%>%
+  mutate(class = str_replace(class, "20% Adulteration", "20_adulteration"))%>%
+  mutate(class = str_replace(class, "30% Adulteration", "30_adulteration"))%>%
+  mutate(class = str_replace(class, "40% Adulteration", "40_adulteration"))%>%
+  mutate(class = str_replace(class, "Pure variety", "pure_variety"))
+
+
+
 #la columna Class esta codificada como caracter y necesito que sea FACTOR
 class(rice$Class)
 rice$Class <-as.factor(rice$Class)
 str(rice)
     
-#necesito limpiar los nombres de las columnas
-library(janitor)
-rice2<-rice%>%
-  clean_names()
-    
 #divido los datos
 set.seed(123)
-rice_split<-initial_split(rice2, strata=class)
+rice_split<-initial_split(rice, strata=class)
 rice_train<-training(rice_split)
 rice_test<-testing(rice_split)
+
+
     
     
 rice_recipe<-recipe(class~., data=rice_split)%>%
@@ -119,6 +132,8 @@ regular_res %>%
     labs(y = "AUC")
     
 ggsave("mtry-optimization.jpeg", height=8, width=10, units="in")
+
+
     
 best_auc <- select_best(regular_res, "roc_auc")
     
@@ -141,5 +156,25 @@ final_res <- final_wf %>%
 final_res %>%
   collect_metrics()
     
-collect_predictions(RF_final) %>%
+collect_predictions(final_res) %>%
   conf_mat(class, .pred_class)
+
+#grafico de la curva ROC de validacion
+final_res %>%
+  collect_predictions() %>%
+  roc_curve(win, .pred_adulterated) %>%
+  ggplot(aes(x = 1 - specificity, y = sensitivity)) +
+  geom_line(size = 1.5, color = "midnightblue") +
+  geom_abline(
+    lty = 2, alpha = 0.5,
+    color = "gray50",
+    size = 1.2
+  )
+
+#vip plot 
+library(vip)
+
+final_res %>%
+  fit(data = rice_training) %>%
+  pull_workflow_fit() %>%
+  vip(geom = "point")
