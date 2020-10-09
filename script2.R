@@ -35,7 +35,11 @@ set.seed(123)
 rice_split<-initial_split(rice, strata=class)
 rice_train<-training(rice_split)
 rice_test<-testing(rice_split)
-      
+
+#validacion cruzada de arroz
+
+p_folds <- vfold_cv(rice_train, strata = class)
+
 rice_recipe<-recipe(class~., data=rice_split)%>%
   #step_corr(all_predictors()) %>%
   step_center(all_predictors(), -all_outcomes()) %>%

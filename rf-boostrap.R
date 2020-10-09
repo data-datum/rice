@@ -1,4 +1,4 @@
-#script 3
+  #script 3
 #trabajamos con todas las variables 
 
 #cargo librerias
@@ -95,12 +95,17 @@ collect_predictions(RF_final) %>%
   conf_mat(class, .pred_class)
 
 
-
 library(vip)
-
+set.seed(123)
 RF_final %>%
-  fit(data = rice_wf) %>%
-  pull_workflow_fit() %>%
+  set_engine("ranger", importance = "permutation") %>%
+  fit(class ~ .,
+      data = juice(rice_recipe)) %>%
   vip(geom = "point")
 
-rice_wf
+
+RF_final %>%
+  fit(data = rice_train) %>%
+  pull_workflow_fit() %>%
+  vip(geom = "point") +
+  labs(title="XGboost importance variables")

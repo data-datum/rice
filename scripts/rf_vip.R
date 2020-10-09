@@ -36,7 +36,7 @@ work_1
 
 doParallel::registerDoParallel()
 
-set.seed(345)
+set.seed(123)
 tune_res <- tune_grid(
   work_1,
   resamples = trees_folds,
@@ -47,9 +47,10 @@ tune_res
 
 
 #tuneo de mtry y min_n -------------------------------------------------------------
+set.seed(123)
 tune_spec <- rand_forest(
   mtry = tune(),
-  trees = 100,
+  trees = 500,
   min_n = tune()
 ) %>%
   set_mode("classification") %>%
@@ -88,7 +89,7 @@ tune_res %>%
   facet_wrap(~parameter, scales = "free_x") +
   labs(x = NULL, y = "accuracy")
 
-ggsave("tune-100.jpeg", height=8, width=10, units="in")
+ggsave("tune-500.jpeg", height=8, width=10, units="in")
 
 
 #con esto vemos como varian los valores
@@ -126,7 +127,7 @@ regular_res %>%
   geom_point() +
   labs(y = "accuracy")
 
-ggsave("accuracy-100.jpeg", height=8, width=10, units="in")
+ggsave("accuracy-500.jpeg", height=8, width=10, units="in")
 
 
 regular_res %>%
@@ -138,19 +139,17 @@ regular_res %>%
   geom_point() +
   labs(y = "AUC")
 
-ggsave("AUC-100.jpeg", height=8, width=10, units="in")
+ggsave("AUC-500.jpeg", height=8, width=10, units="in")
 
 
 #elegimos el mejor modelo
+set.seed(123)
 best_acc <- select_best(regular_res, "accuracy")
 final_rf <- finalize_model(
   tune_spec,
   best_acc
 )
 final_rf
-
-#datos de training
-
 
 
 #vamos a probar con los datos de testing
@@ -170,12 +169,14 @@ final_res %>%
 
 #importancia de las variables
 library(vip)
+set.seed(123)
 final_rf %>%
   set_engine("ranger", importance = "permutation") %>%
   fit(class ~ .,
       data = juice(rice_recipe)) %>%
   vip(geom = "point")
 
-ggsave("vip-100.jpeg", height=8, width=10, units="in")
+ggsave("vip-500.jpeg", height=8, width=10, units="in")
+
 
 
