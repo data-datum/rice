@@ -6,7 +6,7 @@ library(tidyverse)
 library(readxl)
 library(ranger)
 library(tune)
-rice<-read_excel("data/rice.xlsx")
+#rice<-read_excel("data/rice.xlsx")
 
 class(rice$Class)
 rice$Class <-as.factor(rice$Class)
@@ -72,15 +72,11 @@ umap_rec <- recipe(~., data = rice) %>%
 
 umap_prep <- prep(umap_rec)
 
-umap_prep
-
-umap <-juice(umap_prep) %>%
+juice(umap_prep) %>%
   ggplot(aes(umap_1, umap_2, label = class)) +
   geom_point(aes(color = class), alpha = 0.7, size = 2) +
   #geom_text(check_overlap = TRUE, hjust = "inward", family = "IBMPlexSans") +
-  labs(color = NULL)+
-  #xlab(x="UMAP 1", y="UMAP 2")
-
-ggplotly(umap)
+  labs(color = NULL)
 
 
+ggsave("plots/umap_01.jpeg",  height=8, width=10, units="in", dpi=300)

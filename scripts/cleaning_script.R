@@ -1,11 +1,14 @@
 #script de limpieza
+
+#ingreso datos 
+rice<-read_excel("data/rice2.xlsx")
 #nombres de columnas
 library(janitor)
 rice<-rice%>%
   clean_names()
 
-#variables de la columna class
 
+#variables de la columna class
 rice <- rice  %>%
   mutate(class = str_replace(class, "10% Adulteration", "10_adulteration"))%>%
   mutate(class = str_replace(class, "20% Adulteration", "20_adulteration"))%>%
@@ -14,3 +17,7 @@ rice <- rice  %>%
   mutate(class = str_replace(class, "Pure variety", "pure_variety"))
 
   
+#la columna Class esta codificada como caracter y necesito que sea FACTOR
+class(rice$class)
+rice$class <-as.factor(rice$class)
+str(rice)

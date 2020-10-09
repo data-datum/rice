@@ -1,5 +1,5 @@
 #script 3
-#trabajamos con las variables eliminadas
+#trabajamos con todas las variables 
 
 #cargo librerias
 library(tidymodels)
@@ -7,34 +7,9 @@ library(tidyverse)
 library(readxl)
 library(ranger)
 library(tune)
-rice<-read_excel("data/rice.xlsx")
+rice<-read_excel("data/rice2.xlsx")
 
-#la columna Class esta codificada como caracter y necesito que sea FACTOR
-class(rice$class)
-rice$class <-as.factor(rice$class)
-str(rice)
-
-#necesito limpiar los nombres de las columnas
-library(janitor)
-rice<-rice%>%
-  clean_names()
-
-
-
-#variables de la columna class
-
-rice <- rice  %>%
-  mutate(class = str_replace(class, "10% Adulteration", "10_adulteration"))%>%
-  mutate(class = str_replace(class, "20% Adulteration", "20_adulteration"))%>%
-  mutate(class = str_replace(class, "30% Adulteration", "30_adulteration"))%>%
-  mutate(class = str_replace(class, "40% Adulteration", "40_adulteration"))%>%
-  mutate(class = str_replace(class, "Pure variety", "pure_variety"))
-
-# la variable predictora DEBE ser factor
-rice$class <-as.factor(rice$class)
-
-str(rice)
-
+#limpieza de datos para procesar
 
 #divido los datos
 set.seed(123)
@@ -80,7 +55,7 @@ rf_rs <- rice_wf %>%
 
 rf_rs
 
-
+  
 collect_metrics(rf_rs)
 
 #matriz de confusion de datos de training
@@ -90,6 +65,22 @@ rf_rs %>%
 #no olvidemos de preprocesar los datos de testing TAMBIEN
 rice_testing <- rice_recipe %>%
   bake(testing(rice_split))
+
+
+#graficamos las curvas ROC del entrenamiento
+rf_rs %>%
+  collect_predictions() %>%
+  group_by(id) %>%
+  roc_curve(class, .pred_10_adulteration:.pred_pure_variety) %>%
+  ggplot(aes(1 - specificity, sensitivity, color=id)) +
+  geom_abline(lty = 1, color = "gray80", size = 1.5) +
+  geom_path(show.legend = TRUE, alpha = 0.6, size = 1.2) +
+  coord_equal()
+
+ggsave("curvas-roc-bootstraping.jpeg", height=8, width=10, units="in")
+
+
+--------------#metricas de la clasificación------------------------------------------
 
 RF_final <- rice_wf %>%
   add_model(rf_spec) %>%
@@ -105,25 +96,13 @@ collect_predictions(RF_final) %>%
 
 
 
-#graficamos las curvas ROC del entrenamiento
-rf_rs %>%
-  collect_predictions() %>%
-  group_by(id) %>%
-  roc_curve(class, .pred_10_adulteration:.pred_pure_variety) %>%
-  ggplot(aes(1 - specificity, sensitivity, color=id)) +
-  geom_abline(lty = 1, color = "gray80", size = 1.5) +
-  geom_path(show.legend = TRUE, alpha = 0.6, size = 1.2) +
-  coord_equal()
-
-ggsave("curvas-roc-bootstraping.jpeg", height=8, width=10, units="in")
-
-#rice_pivot<- recipe_training %>%
-  #pivot_longer(-class, names_to = "longitudes_onda", values_to = "value")
 
 
-#rice_pivot %>%
-  #ggplot(aes(x=value))+
-  #geom_boxplot()+
-  #facet_wrap(~longitudes_onda)
+library(vip)
 
+RF_final %>%
+  fit(data = rice_wf) %>%
+  pull_workflow_fit() %>%
+  vip(geom = "point")
 
+rice_wf
