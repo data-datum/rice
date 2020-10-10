@@ -7,10 +7,12 @@
   rice_train<-training(rice_split)
   rice_test<-testing(rice_split)
   
+  rice_split
+  
   #specifications of the model
   set.seed(123)
   xgb_spec <- boost_tree(
-    trees = 500, 
+    trees = tune(), 
     tree_depth = tune(), min_n = tune(), 
     loss_reduction = tune(),                     ## first three: model complexity
     sample_size = tune(), mtry = tune(),         ## randomness
@@ -23,6 +25,7 @@
   
   set.seed(123)
   xgb_grid <- grid_latin_hypercube(
+    trees(),
     tree_depth(),
     min_n(),
     loss_reduction(),
@@ -57,11 +60,33 @@
     control = control_grid(save_pred = TRUE)
   )
   
-  xgb_res
-      
-  #vemos las metricas
+  glimpse(xgb_res$.metrics)
+  
+  
+  xgb_res %>%
+    group_by(id) %>%
+    roc_curve(class, .pred_10_adulteration:.pred_pure_variety) %>%
+    autoplot()
+  
+#vemos las metricas----------------------------------------------------------
   collect_metrics(xgb_res)
   #xgboost plot
+  xgb_res %>%
+    collect_metrics() %>%
+    filter(.metric == "accuracy") %>%
+    select(mean, mtry:sample_size) %>%
+    pivot_longer(mtry:sample_size,
+                 values_to = "value",
+                 names_to = "parameter"
+    ) %>%
+    ggplot(aes(value, mean, color = parameter)) +
+    geom_point(alpha = 0.8, show.legend = FALSE) +
+    facet_wrap(~parameter, scales = "free_x") +
+    labs(x = NULL, y = "accuracy")
+  
+  ggsave("boost-tune.jpeg", height=8, width=10, units="in")
+  
+  #ROC CURVE
   xgb_res %>%
     collect_metrics() %>%
     filter(.metric == "roc_auc") %>%
@@ -73,14 +98,14 @@
     ggplot(aes(value, mean, color = parameter)) +
     geom_point(alpha = 0.8, show.legend = FALSE) +
     facet_wrap(~parameter, scales = "free_x") +
-    labs(x = NULL, y = "accuracy")
+    labs(x = NULL, y = "roc_auc")
   
-  ggsave("boost-500.jpeg", height=8, width=10, units="in")
+  ggsave("boost-tune-roc-auc.jpeg", height=8, width=10, units="in")
+
+  #elegimos el mejor modelo------------------------------------------------------ 
+  show_best(xgb_res, "accuracy")
   
-  
-  show_best(xgb_res, "roc_auc")
-  
-  best_auc <- select_best(xgb_res, "roc_auc")
+  best_auc <- select_best(xgb_res, "accuracy")
   best_auc
   
   final_xgb <- finalize_workflow(
@@ -90,20 +115,31 @@
   
   final_xgb
   
-  #importancia de las variables
+  #importancia de las variables-----------------------------------------------
   library(vip)
   set.seed(123)
   final_xgb %>%
     fit(data = rice_train) %>%
     pull_workflow_fit() %>%
-    vip(geom = "point") +
-    labs(title="XGboost importance variables")
+    vip(geom = "col", num_features = 15, color='gray70', fill='gray70') +
+    labs(title="XGBoost importance variables", x='variables',y='importance')+
+    theme_light()+
+    theme(axis.title.x=element_text(size=16), axis.title.y=element_text(size=16),
+          axis.text.x=element_text(size=12),axis.text.y=element_text(size=14))
+    
+  ggsave("boost-vip-.jpeg", height=8, width=10, units="in")
   
-  ggsave("boost-vip-500.jpeg", height=8, width=10, units="in")
-  
+
+xgb<-final_xgb %>%
+  fit(data = rice_train) %>%
+  pull_workflow_fit()
+
+variables_imp<-vi(xgb, sort=TRUE)
+write.csv(variables_imp, file="imp_variables.csv")
+
   final_res <- last_fit(final_xgb, rice_split)
   
-  #matriz de confusion
+  #matriz de confusion-------------------------------------------------
   final_res %>%
     collect_predictions() %>%
     conf_mat(class, .pred_class)
@@ -111,14 +147,24 @@
   collect_metrics(final_res)
 
 
-final_res %>%
-  collect_predictions() %>%
-  roc_curve(class, .pred_10_adulteration:.pred_pure_variety) %>%
-  ggplot(aes(x = 1 - specificity, y = sensitivity)) +
-  geom_line(size = 1.5, color = "midnightblue") +
-  geom_abline(
-    lty = 2, alpha = 0.5,
-    color = "gray50",
-    size = 1.2
-  )
+# curvas roc---------------------------------------------------------
 
+final_res%>%
+  collect_predictions() %>% 
+  roc_curve(class, .pred_10_adulteration:.pred_pure_variety)%>%
+  autoplot()
+
+ggsave("roc-curves-.jpeg", height=8, width=10, units="in")
+
+final_res %>%
+  collect_predictions()%>%
+  conf_mat(class, .pred_class) %>%
+  summary() %>%
+  select(-.estimator) %>%
+  filter(.metric %in%
+           c("accuracy", "precision", "recall", "f_meas", "roc_auc")) 
+
+
+
+
+#training error-------------------------------------------------------

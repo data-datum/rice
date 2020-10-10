@@ -64,6 +64,8 @@ ggsave("plots/pca01.jpeg",  height=8, width=10, units="in", dpi=300)
 
 
 #umap
+library(tidymodels)
+library(tidyverse)
 library(embed)
 umap_rec <- recipe(~., data = rice) %>%
   update_role(class, new_role = "id") %>%
@@ -72,11 +74,43 @@ umap_rec <- recipe(~., data = rice) %>%
 
 umap_prep <- prep(umap_rec)
 
-juice(umap_prep) %>%
+umap <- juice(umap_prep) %>%
   ggplot(aes(umap_1, umap_2, label = class)) +
   geom_point(aes(color = class), alpha = 0.7, size = 2) +
   #geom_text(check_overlap = TRUE, hjust = "inward", family = "IBMPlexSans") +
   labs(color = NULL)
 
+library(plotly)
+ggplotly(umap)
+
+
 
 ggsave("plots/umap_01.jpeg",  height=8, width=10, units="in", dpi=300)
+
+
+
+#umap para plotly
+library(tidymodels)
+library(tidyverse)
+library(embed)
+umap_rec <- recipe(~., data = rice) %>%
+  update_role(class, new_role = "id") %>%
+  step_normalize(all_predictors()) %>%
+  step_umap(all_predictors(), neighbors=10)
+
+umap_prep <- prep(umap_rec)
+
+umap <- umap_row %>%
+  ggplot(aes(umap_1, umap_2, label = name)) +
+  geom_point(aes(color = class), alpha = 0.7, size = 2) +
+  #geom_text(check_overlap = TRUE, hjust = "inward", family = "IBMPlexSans") +
+  labs(color = NULL)
+
+library(plotly)
+ggplotly(umap)
+
+#agrego rownames
+umap_row <- juice(umap_prep)%>%
+  mutate(name = rownames(.)) %>% 
+  select(name, everything())
+
