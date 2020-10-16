@@ -84,7 +84,8 @@
     facet_wrap(~parameter, scales = "free_x") +
     labs(x = NULL, y = "accuracy")
   
-  ggsave("boost-tune.jpeg", height=8, width=10, units="in")
+  ggsave("plots2/boost-tune-cv10.jpeg", height=8, width=10, units="in", dpi=300)
+  ggsave("plots2/boost-tune-cv10.tiff", height=8, width=10, units="in", dpi=300)
   
   #ROC CURVE
   xgb_res %>%
@@ -100,8 +101,9 @@
     facet_wrap(~parameter, scales = "free_x") +
     labs(x = NULL, y = "roc_auc")
   
-  ggsave("boost-tune-roc-auc.jpeg", height=8, width=10, units="in")
-
+  ggsave("plots2/boost-tune-roc-auc-cv10.jpeg", height=8, width=10, units="in", dpi=300)
+  ggsave("plots2/boost-tune-roc-auc-cv10.tiff", height=8, width=10, units="in", dpi=300)
+  
   #elegimos el mejor modelo------------------------------------------------------ 
   show_best(xgb_res, "accuracy")
   
@@ -127,7 +129,8 @@
     theme(axis.title.x=element_text(size=16), axis.title.y=element_text(size=16),
           axis.text.x=element_text(size=12),axis.text.y=element_text(size=14))
     
-  ggsave("boost-vip-.jpeg", height=8, width=10, units="in")
+  ggsave("plots2/boost-vip-.jpeg", height=8, width=10, units="in", dpi=300)
+  ggsave("plots2/boost-vip-.tiff", height=8, width=10, units="in", dpi=300)
   
 
 xgb<-final_xgb %>%
@@ -142,8 +145,13 @@ write.csv(variables_imp, file="imp_variables.csv")
   #matriz de confusion-------------------------------------------------
   final_res %>%
     collect_predictions() %>%
-    conf_mat(class, .pred_class)
+    conf_mat(class, .pred_class)%>%
+    autoplot(type = "heatmap")
   
+  ggsave("plots2/conf-heatmap-cv-10.jpeg", height=8, width=10, units="in", dpi=300)
+  ggsave("plots2/conf-heatmap-cv-10.tiff", height=8, width=10, units="in", dpi=300)
+  
+
   collect_metrics(final_res)
 
 
@@ -154,7 +162,10 @@ final_res%>%
   roc_curve(class, .pred_10_adulteration:.pred_pure_variety)%>%
   autoplot()
 
-ggsave("roc-curves-.jpeg", height=8, width=10, units="in")
+ggsave("plots2/roc-curves-.jpeg", height=8, width=10, units="in", dpi=300)
+
+ggsave("plots2/roc-curves-.tiff", height=8, width=10, units="in", dpi=300)
+
 
 final_res %>%
   collect_predictions()%>%
@@ -163,8 +174,6 @@ final_res %>%
   select(-.estimator) %>%
   filter(.metric %in%
            c("accuracy", "precision", "recall", "f_meas", "roc_auc")) 
-
-
-
+  
 
 #training error-------------------------------------------------------

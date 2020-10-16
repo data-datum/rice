@@ -5,7 +5,7 @@ library(tidyverse)
 library(readxl)
 library(ranger)
 library(tune)
-rice<-read_excel("data/rice.xlsx")
+rice<-read_excel("data/rice4.xlsx")
 
 #la columna Class esta codificada como caracter y necesito que sea FACTOR
 class(rice$Class)
