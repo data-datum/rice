@@ -38,6 +38,7 @@ xgb_grid <- grid_latin_hypercube(
 xgb_grid
 
 #workflow
+set.seed(123)
 xgb_wf <- workflow() %>%
   add_formula(class ~ .) %>%
   add_model(xgb_spec)
@@ -49,7 +50,7 @@ set.seed(123)
 vb_folds_5 <- vfold_cv(rice_train, strata = class, v = 5)
 vb_folds_5
 
-
+set.seed(123)
 doParallel::registerDoParallel()
 
 set.seed(123)
@@ -87,7 +88,8 @@ xgb_res %>%
   facet_wrap(~parameter, scales = "free_x") +
   labs(x = NULL, y = "accuracy")
 
-ggsave("boost-tune-5.jpeg", height=8, width=10, units="in")
+ggsave("plots2/boost-tune-cv5.jpeg", height=8, width=10, units="in", dpi=300)
+ggsave("plots2/boost-tune-cv5.tiff", height=8, width=10, units="in", dpi=300)
 
 
 hpc_cv %>% 
@@ -109,13 +111,15 @@ xgb_res %>%
   facet_wrap(~parameter, scales = "free_x") +
   labs(x = NULL, y = "roc_auc")
 
-ggsave("boost-tune-roc-auc-5.jpeg", height=8, width=10, units="in")
+ggsave("plots2/boost-tune-roc-auc-cv5.jpeg", height=8, width=10, units="in", dpi=300)
+ggsave("plots2/boost-tune-roc-auc-cv5.tiff", height=8, width=10, units="in", dpi=300)
+
 
 #elegimos el mejor modelo------------------------------------------------------ 
 show_best(xgb_res, "accuracy")
 
-best_auc <- select_best(xgb_res, "accuracy")
-best_auc
+best_acc <- select_best(xgb_res, "accuracy")
+best_acc
 
 final_xgb <- finalize_workflow(
   xgb_wf,
@@ -135,8 +139,9 @@ final_xgb %>%
   theme_light()+
   theme(axis.title.x=element_text(size=16), axis.title.y=element_text(size=16),
         axis.text.x=element_text(size=12),axis.text.y=element_text(size=14))
-
-ggsave("boost-vip-5.jpeg", height=8, width=10, units="in")
+  
+  ggsave("plots2/boost-vip-cv5.jpeg", height=8, width=10, units="in", dpi=300)
+  ggsave("plots2/boost-vip-cv5.tiff", height=8, width=10, units="in", dpi=300)
 
 
 xgb<-final_xgb %>%
@@ -152,7 +157,12 @@ final_res <- last_fit(final_xgb, rice_split)
 
 final_res %>%
   collect_predictions() %>%
-  conf_mat(class, .pred_class)
+  conf_mat(class, .pred_class)%>%
+  autoplot(type = "heatmap")
+
+
+ggsave("plots2/conf-heatmap-cv-5.jpeg", height=8, width=10, units="in", dpi=300)
+ggsave("plots2/conf-heatmap-cv-5.tiff", height=8, width=10, units="in", dpi=300)
 
 collect_metrics(final_res)
 
@@ -164,7 +174,9 @@ final_res%>%
   roc_curve(class, .pred_10_adulteration:.pred_pure_variety)%>%
   autoplot()
 
-ggsave("roc-curves-5.jpeg", height=8, width=10, units="in")
+ggsave("plots2/roc-curves-5.jpeg", height=8, width=10, units="in", dpi=300)
+ggsave("plots2/roc-curves-5.tiff", height=8, width=10, units="in", dpi=300)
+
 
 final_res %>%
   collect_predictions()%>%

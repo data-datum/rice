@@ -46,8 +46,8 @@ xgb_wf
 
 #validacion cruzada
 set.seed(123)
-vb_folds_5 <- vfold_cv(rice_train, strata = class, v = 3)
-vb_folds_5
+vb_folds_3 <- vfold_cv(rice_train, strata = class, v = 3)
+vb_folds_3
 
 
 doParallel::registerDoParallel()
@@ -55,18 +55,13 @@ doParallel::registerDoParallel()
 set.seed(123)
 xgb_res <- tune_grid(
   xgb_wf,
-  resamples = vb_folds_5,
+  resamples = vb_folds_3,
   grid = xgb_grid,
   control = control_grid(save_pred = TRUE)
 )
 
 glimpse(xgb_res$.metrics)
 
-
-xgb_res %>%
-  group_by(id) %>%
-  roc_curve(class, .pred_10_adulteration:.pred_pure_variety) %>%
-  autoplot()
 
 #vemos las metricas----------------------------------------------------------
 collect_metrics(xgb_res)
@@ -84,7 +79,10 @@ xgb_res %>%
   facet_wrap(~parameter, scales = "free_x") +
   labs(x = NULL, y = "accuracy")
 
-ggsave("boost-tune-3.jpeg", height=8, width=10, units="in")
+ggsave("plots2/boost-tune-cv-3.jpeg", height=8, width=10, units="in", dpi=300)
+ggsave("plots2/boost-tune-cv-3-.tiff", height=8, width=10, units="in", dpi=300)
+
+
 
 #ROC CURVE
 xgb_res %>%
@@ -100,7 +98,9 @@ xgb_res %>%
   facet_wrap(~parameter, scales = "free_x") +
   labs(x = NULL, y = "roc_auc")
 
-ggsave("boost-tune-roc-auc-3.jpeg", height=8, width=10, units="in")
+ggsave("plots2/boost-tune-rocauc-cv-3.jpeg", height=8, width=10, units="in", dpi=300)
+ggsave("plots2/boost-tune-rocauc-cv-3.tiff", height=8, width=10, units="in", dpi=300)
+
 
 #elegimos el mejor modelo------------------------------------------------------ 
 show_best(xgb_res, "accuracy")
@@ -116,18 +116,19 @@ final_xgb <- finalize_workflow(
 final_xgb
 
 #importancia de las variables-----------------------------------------------
-library(vip)
-set.seed(123)
-final_xgb %>%
-  fit(data = rice_train) %>%
-  pull_workflow_fit() %>%
-  vip(geom = "col", num_features = 15, color='gray70', fill='gray70') +
-  labs(title="XGBoost importance variables", x='variables',y='importance')+
-  theme_light()+
-  theme(axis.title.x=element_text(size=16), axis.title.y=element_text(size=16),
-        axis.text.x=element_text(size=12),axis.text.y=element_text(size=14))
-
-ggsave("boost-vip-3.jpeg", height=8, width=10, units="in")
+  library(vip)
+  set.seed(123)
+  final_xgb %>%
+    fit(data = rice_train) %>%
+    pull_workflow_fit() %>%
+    vip(geom = "col", num_features = 15, color='gray70', fill='gray70') +
+    labs(title="XGBoost importance variables", x='variables',y='importance')+
+    theme_light()+
+    theme(axis.title.x=element_text(size=16), axis.title.y=element_text(size=16),
+          axis.text.x=element_text(size=12),axis.text.y=element_text(size=14))
+  
+  ggsave("plots2/boost-vip-3.jpeg", height=8, width=10, units="in", dpi=300)
+  ggsave("plots2/boost-vip-3.tiff", height=8, width=10, units="in", dpi=300)
 
 
 xgb<-final_xgb %>%
@@ -135,28 +136,35 @@ xgb<-final_xgb %>%
   pull_workflow_fit()
 
 variables_imp<-vi(xgb, sort=TRUE)
-write.csv(variables_imp, file="imp_variables-3.csv")
+write.csv(variables_imp, file="imp_variables-cv3.csv")
 
 
 #matriz de confusion-------------------------------------------------
+set.seed(123)
 final_res <- last_fit(final_xgb, rice_split)
 
 final_res %>%
   collect_predictions() %>%
-  conf_mat(class, .pred_class)
+  conf_mat(class, .pred_class)%>%
+  autoplot(type = "heatmap")
+
+ggsave("plots2/conf-heatmap-cv.3.jpeg", height=8, width=10, units="in", dpi=300)
+ggsave("plots2/conf-heatmap-cv-3.tiff", height=8, width=10, units="in", dpi=300)
 
 collect_metrics(final_res)
 
 
 # curvas roc---------------------------------------------------------
-
+set.seed(123)
 final_res%>%
   collect_predictions() %>% 
   roc_curve(class, .pred_10_adulteration:.pred_pure_variety)%>%
   autoplot()
 
-ggsave("roc-curves-3.jpeg", height=8, width=10, units="in")
+ggsave("roc-curves-3.jpeg", height=8, width=10, units="in", dpi=300)
+ggsave("roc-curves-3.tiff", height=8, width=10, units="in", dpi=300)
 
+set.seed(123)
 final_res %>%
   collect_predictions()%>%
   conf_mat(class, .pred_class) %>%

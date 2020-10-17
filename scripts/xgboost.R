@@ -46,7 +46,7 @@
   
   #validacion cruzada
   set.seed(123)
-  vb_folds <- vfold_cv(rice_train, strata = class)
+  vb_folds <- vfold_cv(rice_train, strata = class, )
   vb_folds
   
   
@@ -106,7 +106,7 @@
   
   #elegimos el mejor modelo------------------------------------------------------ 
   show_best(xgb_res, "accuracy")
-  
+  set.seed(123)
   best_auc <- select_best(xgb_res, "accuracy")
   best_auc
   
@@ -140,17 +140,23 @@ xgb<-final_xgb %>%
 variables_imp<-vi(xgb, sort=TRUE)
 write.csv(variables_imp, file="imp_variables.csv")
 
-  final_res <- last_fit(final_xgb, rice_split)
   
   #matriz de confusion-------------------------------------------------
+  set.seed(123)
+final_res <- last_fit(final_xgb, rice_split)
+
   final_res %>%
     collect_predictions() %>%
     conf_mat(class, .pred_class)%>%
     autoplot(type = "heatmap")
-  
+
   ggsave("plots2/conf-heatmap-cv-10.jpeg", height=8, width=10, units="in", dpi=300)
   ggsave("plots2/conf-heatmap-cv-10.tiff", height=8, width=10, units="in", dpi=300)
   
+  set.seed(123)
+  final_res %>%
+    collect_predictions() %>%
+    conf_mat(class, .pred_class)
 
   collect_metrics(final_res)
 
